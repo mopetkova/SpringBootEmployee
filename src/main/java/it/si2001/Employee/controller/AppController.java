@@ -25,6 +25,102 @@ public class AppController {
     @Autowired
     private EmployeeService employeeService;
 
+    // == HOME == getAllEmployee()
+    @RequestMapping(value = "/", method = RequestMethod.GET)
+    public ResponseEntity<List<Employee>> homeRest() {
+        List<Employee> employees = (List<Employee>) employeeService.getAllEmployee();
+        if (employees.isEmpty()) {
+            return new ResponseEntity<List<Employee>>(HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<List<Employee>>(employees, HttpStatus.OK);
+    }
+
+    // == getEmployeeById(id)
+    @RequestMapping(value = "/employee/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Employee> getEmployee(@PathVariable("id") int id) {
+        System.out.println("Fetching User with id " + id);
+        Optional<Employee> employeeOp = employeeService.findById(id);
+        Employee employee = employeeOp.get();
+
+        if (employee == null) {
+            System.out.println("User with id " + id + " not found");
+            return new ResponseEntity<Employee>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<Employee>(employee, HttpStatus.OK);
+    }
+
+    // == createEmployee()
+    @RequestMapping(value = "/employee/", method = RequestMethod.POST)
+    public ResponseEntity<Void> createEmployee(@RequestBody Employee employee, UriComponentsBuilder ucBuilder) {
+        System.out.println("Creating User " + employee.getName());
+
+        if (employeeService.isExist(employee)) {
+            System.out.println("A User with name " + employee.getName() + " already exist");
+            return new ResponseEntity<Void>(HttpStatus.CONFLICT);
+        }
+
+        employeeService.saveEmployee(employee);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(ucBuilder.path("/employee/{id}").buildAndExpand(employee.getEmployeeId()).toUri());
+
+        return new ResponseEntity<Void>(headers, HttpStatus.CREATED);
+    }
+
+    // == updateEmployee()
+    @RequestMapping(value = "/employee/{id}", method = RequestMethod.PUT)
+    public ResponseEntity<Employee> updateEmployee(@PathVariable("id") int id, @RequestBody Employee employee) {
+        System.out.println("Updating Employee " + id);
+
+        Optional<Employee> currentEmployeeOp = employeeService.findById(id);
+        Employee currentEmployee = currentEmployeeOp.get();
+
+        if (currentEmployee == null) {
+            System.out.println("Employee with id " + id + " not found");
+            return new ResponseEntity<Employee>(HttpStatus.NOT_FOUND);
+        }
+
+        currentEmployee.setName(employee.getName());
+        currentEmployee.setSurname(employee.getSurname());
+        currentEmployee.setCountry(employee.getCountry());
+        currentEmployee.setBirthDate(employee.getBirthDate());
+        currentEmployee.setMaritalStatus(employee.getMaritalStatus());
+        currentEmployee.setSkills(employee.getSkills());
+
+        employeeService.saveEmployee(currentEmployee);
+        return new ResponseEntity<Employee>(currentEmployee, HttpStatus.OK);
+    }
+
+    // == deleteEmployee()
+    @RequestMapping(value = "/employee/{id}", method = RequestMethod.DELETE)
+    public ResponseEntity<Employee> deleteEmployee(@PathVariable("id") int id) {
+        System.out.println("Fetching & Deleting User with id " + id);
+
+        Optional<Employee> employeeOp = employeeService.findById(id);
+        Employee employee = employeeOp.get();
+
+        if (employee == null) {
+            System.out.println("Unable to delete. User with id " + id + " not found");
+            return new ResponseEntity<Employee>(HttpStatus.NOT_FOUND);
+        }
+
+        employeeService.deleteEmployee(employee);
+        return new ResponseEntity<Employee>(HttpStatus.NO_CONTENT);
+    }
+
+
+    // == deleteAllEmployee()
+    @RequestMapping(value = "/user/", method = RequestMethod.DELETE)
+    public ResponseEntity<Employee> deleteAllUsers() {
+        System.out.println("Deleting All Users");
+
+        employeeService.deleteAllEmployee();
+        return new ResponseEntity<Employee>(HttpStatus.NO_CONTENT);
+    }
+
+    
+//    _____________ == SERVICE CON MODELandVIEW == __________________
+    
 //    @Autowired
 //    private MaritalStatusService maritalStatusService;
 //
@@ -129,143 +225,6 @@ public class AppController {
 //    public List<Employee> search(String search) {
 //        List<Employee> filterList = employeeService.search(search);
 //        return filterList;
-//    }
-
-
-    //______ REST SERVICE ______/__/create__/delete/{id}__/employee/{id}______
-
-    // == HOME == getAllEmployee()
-    @RequestMapping(value = "/", method = RequestMethod.GET)
-    public ResponseEntity<List<Employee>> homeRest() {
-        List<Employee> employees = (List<Employee>) employeeService.getAllEmployee();
-        if (employees.isEmpty()) {
-            return new ResponseEntity<List<Employee>>(HttpStatus.NO_CONTENT);
-        }
-        return new ResponseEntity<List<Employee>>(employees, HttpStatus.OK);
-    }
-
-    // == getEmployeeById(id)
-    @RequestMapping(value = "/employee/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Employee> getEmployee(@PathVariable("id") int id) {
-        System.out.println("Fetching User with id " + id);
-        Optional<Employee> employeeOp = employeeService.findById(id);
-        Employee employee = employeeOp.get();
-
-        if (employee == null) {
-            System.out.println("User with id " + id + " not found");
-            return new ResponseEntity<Employee>(HttpStatus.NOT_FOUND);
-        }
-        return new ResponseEntity<Employee>(employee, HttpStatus.OK);
-    }
-
-    // == createEmployee()
-    @RequestMapping(value = "/employee/", method = RequestMethod.POST)
-    public ResponseEntity<Void> createEmployee(@RequestBody Employee employee, UriComponentsBuilder ucBuilder) {
-        System.out.println("Creating User " + employee.getName());
-
-        if (employeeService.isExist(employee)) {
-            System.out.println("A User with name " + employee.getName() + " already exist");
-            return new ResponseEntity<Void>(HttpStatus.CONFLICT);
-        }
-
-        employeeService.saveEmployee(employee);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(ucBuilder.path("/employee/{id}").buildAndExpand(employee.getEmployeeId()).toUri());
-
-        return new ResponseEntity<Void>(headers, HttpStatus.CREATED);
-    }
-
-    // == updateEmployee()
-    @RequestMapping(value = "/employee/{id}", method = RequestMethod.PUT)
-    public ResponseEntity<Employee> updateEmployee(@PathVariable("id") int id, @RequestBody Employee employee) {
-        System.out.println("Updating Employee " + id);
-
-        Optional<Employee> currentEmployeeOp = employeeService.findById(id);
-        Employee currentEmployee = currentEmployeeOp.get();
-
-        if (currentEmployee == null) {
-            System.out.println("Employee with id " + id + " not found");
-            return new ResponseEntity<Employee>(HttpStatus.NOT_FOUND);
-        }
-
-        currentEmployee.setName(employee.getName());
-        currentEmployee.setSurname(employee.getSurname());
-        currentEmployee.setCountry(employee.getCountry());
-        currentEmployee.setBirthDate(employee.getBirthDate());
-        currentEmployee.setMaritalStatus(employee.getMaritalStatus());
-        currentEmployee.setSkills(employee.getSkills());
-
-        employeeService.saveEmployee(currentEmployee);
-        return new ResponseEntity<Employee>(currentEmployee, HttpStatus.OK);
-    }
-
-    // == deleteEmployee()
-    @RequestMapping(value = "/employee/{id}", method = RequestMethod.DELETE)
-    public ResponseEntity<Employee> deleteEmployee(@PathVariable("id") int id) {
-        System.out.println("Fetching & Deleting User with id " + id);
-
-        Optional<Employee> employeeOp = employeeService.findById(id);
-        Employee employee = employeeOp.get();
-
-        if (employee == null) {
-            System.out.println("Unable to delete. User with id " + id + " not found");
-            return new ResponseEntity<Employee>(HttpStatus.NOT_FOUND);
-        }
-
-        employeeService.deleteEmployee(employee);
-        return new ResponseEntity<Employee>(HttpStatus.NO_CONTENT);
-    }
-
-
-    // == deleteAllEmployee()
-    @RequestMapping(value = "/user/", method = RequestMethod.DELETE)
-    public ResponseEntity<Employee> deleteAllUsers() {
-        System.out.println("Deleting All Users");
-
-        employeeService.deleteAllEmployee();
-        return new ResponseEntity<Employee>(HttpStatus.NO_CONTENT);
-    }
-
-
-
-
-//    @RequestMapping(value = "/create", method = RequestMethod.GET)
-//    public ResponseEntity<Employee> createGetRest(@RequestBody Employee employee) {
-//
-//        employeeService.saveEmployee(employee);
-//
-//        return new ResponseEntity<Employee>(employee, HttpStatus.CREATED);
-//    }
-//
-//    @RequestMapping(value = "/create", method = RequestMethod.POST)
-//    public ResponseEntity<Employee> createPostRest(@RequestBody Employee employee) {
-//
-//        employeeService.saveEmployee(employee);
-//
-//        return new ResponseEntity<Employee>(employee, HttpStatus.CREATED);
-//    }
-
-//    @RequestMapping(value = "/delete/{id}", method = RequestMethod.DELETE)
-//    public ResponseEntity<Void> deleteUser(@PathVariable("id") int id) {
-//
-//        Employee employee = employeeService.findEmployee(id);
-//        if (employee == null) {
-//            return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
-//        }
-//
-//        employeeService.deleteEmployee(employee);
-//        return new ResponseEntity<Void>(HttpStatus.OK);
-//    }
-
-//    @RequestMapping(value = "/employee/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-//    public ResponseEntity<Employee> getUser(@PathVariable("id") int id) {
-//
-//        Employee employee = employeeService.findEmployee(id);
-//        if (employee == null) {
-//            return new ResponseEntity<Employee>(HttpStatus.NOT_FOUND);
-//        }
-//        return new ResponseEntity<Employee>(employee, HttpStatus.OK);
 //    }
 
 }
